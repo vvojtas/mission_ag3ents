@@ -1,0 +1,32 @@
+# General Coding Rules
+
+## Platform
+- **Windows** — this project runs on Windows. All terminal commands must be PowerShell-compatible.
+- Do **not** use Linux-specific shell syntax (e.g., `&&` chaining, `#!/bin/bash`, `export VAR=val`). Use PowerShell equivalents (e.g., `;` or separate commands, `$env:VAR = "val"`).
+
+## Language & Runtime
+- **Python 3.14** — use modern features (type unions `X | Y`, `match` statements, etc.)
+- **Async-first** — prefer `async def` for I/O-bound functions. Use `asyncio.run()` as the entry point.
+- **Strict type hints** — annotate all function signatures (params and return types). Use `typing` module when needed.
+
+## Package Management
+- **`uv`** — sole package manager. Use `uv sync` to install, `uv add <pkg>` to add dependencies.
+- **`pyproject.toml`** — single source of truth for project metadata and dependencies.
+- **Single virtual environment** at project root (`.venv/`).
+- When running scripts, use `uv run python <script>`.
+
+## Configuration & Secrets
+- **`pydantic-settings`** — all config via the `Settings` class in `common/settings.py`.
+- **`.env`** file for secrets — never hardcode API keys or tokens.
+- **`.env.example`** — keep in sync with any new env vars added.
+
+## Code Style
+- No unused imports, no dead code.
+- Prefer f-strings over `.format()` or `%`.
+- Use `pathlib.Path` over `os.path`.
+- Keep functions focused — one function, one responsibility.
+- Use `logging` module for output — avoid bare `print()` statements in library/common code.
+
+## Version Control
+- Trunk-based development — commit directly to `main`.
+- Write clear, concise commit messages.

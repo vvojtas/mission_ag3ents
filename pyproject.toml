@@ -1,0 +1,19 @@
+[project]
+name = "mission-ag3ents"
+version = "0.1.0"
+description = "AI Devs competition — task solutions and shared utilities"
+requires-python = ">=3.14"
+dependencies = [
+    "litellm",
+    "httpx",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+    "colorama",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "ipython",
+]
