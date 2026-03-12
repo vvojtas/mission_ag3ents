@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Project Structure Rules
 
 ## Directory Layout
@@ -9,7 +13,7 @@ mission_ag3ents/
 │   ├── __init__.py
 │   ├── settings.py       # Pydantic-settings configuration
 │   ├── logging_config.py # Colored logging setup
-│   ├── llm_client.py     # LLM calling wrapper (litellm)
+│   ├── llm_client.py     # LLM calling wrapper (OpenAI SDK)
 │   ├── task_api.py       # Task platform API client
 │   └── prompt_loader.py  # Prompt template loader
 ├── task_01/              # Per-task solution folders

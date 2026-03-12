@@ -21,7 +21,7 @@ async def main() -> None:
     settings = Settings()
 
     logger.info("Task 01 started")
-    logger.info("Using model: %s", settings.default_model)
+    
 
     # TODO: Implement task solution here
 

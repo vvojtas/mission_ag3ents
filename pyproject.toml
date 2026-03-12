@@ -2,15 +2,18 @@
 name = "mission-ag3ents"
 version = "0.1.0"
 description = "AI Devs competition — task solutions and shared utilities"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
-    "litellm",
+    "openai",
     "httpx",
     "pydantic",
     "pydantic-settings",
     "python-dotenv",
     "colorama",
 ]
+
+[tool.setuptools.packages.find]
+include = ["common*", "task_*"]
 
 [project.optional-dependencies]
 dev = [

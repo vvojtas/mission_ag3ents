@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # General Coding Rules
 
 ## Platform
@@ -5,7 +9,7 @@
 - Do **not** use Linux-specific shell syntax (e.g., `&&` chaining, `#!/bin/bash`, `export VAR=val`). Use PowerShell equivalents (e.g., `;` or separate commands, `$env:VAR = "val"`).
 
 ## Language & Runtime
-- **Python 3.14** — use modern features (type unions `X | Y`, `match` statements, etc.)
+- **Python 3.12** — use modern features (type unions `X | Y`, `match` statements, etc.)
 - **Async-first** — prefer `async def` for I/O-bound functions. Use `asyncio.run()` as the entry point.
 - **Strict type hints** — annotate all function signatures (params and return types). Use `typing` module when needed.
 

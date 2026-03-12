@@ -8,8 +8,8 @@ Repository for AI Devs tasks and challenges.
 
 | Component | Choice |
 |-----------|--------|
-| Language | Python 3.14, async-first |
-| LLM Access | [litellm](https://docs.litellm.ai/) via [OpenRouter](https://openrouter.ai/) |
+| Language | Python 3.12, async-first |
+| LLM Access | [OpenAI SDK](https://platform.openai.com/docs/) via [OpenRouter](https://openrouter.ai/) |
 | Config | [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) + `.env` |
 | Package Manager | [uv](https://docs.astral.sh/uv/) |
 | Logging | `logging` module with colored output |

@@ -1,9 +1,14 @@
+---
+trigger: always_on
+---
+
 # LLM Integration Rules
 
 ## Provider & Library
-- **`litellm`** — use for all LLM calls. Provides a unified API across providers.
-- **OpenRouter** — primary provider. Model strings follow the format: `openrouter/<provider>/<model>` (e.g., `openrouter/openai/gpt-4o`, `openrouter/anthropic/claude-3.5-sonnet`).
-- Always use **async** calls: `litellm.acompletion()`.
+- **`openai` SDK** — use for all LLM calls. Configure with OpenRouter's base URL for multi-provider access.
+- **OpenRouter** — primary provider. Set `base_url="https://openrouter.ai/api/v1"` on the `AsyncOpenAI` client.
+- Model strings follow the format: `<provider>/<model>` (e.g., `openai/gpt-4o`, `anthropic/claude-3.5-sonnet`).
+- Always use **async** calls via `AsyncOpenAI`.
 
 ## Model Switching
 - Models should be easily switchable per task — pass model as a parameter, don't hardcode.

@@ -4,6 +4,7 @@ Uses pydantic-settings to provide type-safe, validated configuration.
 All secrets are loaded from a `.env` file at the project root.
 """
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,7 +19,6 @@ class Settings(BaseSettings):
         openrouter_api_key: API key for OpenRouter LLM access.
         hub_api_key: API key for the AI Devs competition platform.
         hub_api_url: Base URL for the AI Devs task API.
-        default_model: Default LLM model identifier for litellm.
     """
 
     model_config = SettingsConfigDict(
@@ -27,7 +27,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    openrouter_api_key: str
-    hub_api_key: str
+    openrouter_api_key: str = Field(default=...)
+    hub_api_key: str = Field(default=...)
     hub_api_url: str = "https://api.example.com"
-    default_model: str = "openrouter/openai/gpt-4o"

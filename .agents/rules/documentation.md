@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Documentation Rules
 
 ## Docstrings
@@ -12,7 +16,7 @@ async def ask(prompt: str, model: str | None = None) -> str:
 
     Args:
         prompt: The user message to send.
-        model: Model identifier (e.g., 'openrouter/openai/gpt-4o').
+        model: Model identifier (e.g., 'openai/gpt-4o').
             Uses default from settings if not provided.
 
     Returns:
