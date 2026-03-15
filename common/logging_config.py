@@ -5,13 +5,15 @@ output is easy to scan at a glance:
 
 - **LLM Request** (cyan)   — messages sent to the LLM
 - **LLM Response** (green)  — messages received from the LLM
-- **Task Hub** (yellow)     — task platform API interactions
+- **Task Hub** (blue)     — task platform API interactions
+- **Cost Tracker** (yellow)     — cost tracker events
 - **Error** (red)           — errors and exceptions
 - **General** (white)       — default informational messages
 """
 
 import logging
 import sys
+import typing
 
 from colorama import Fore, Style, init as colorama_init
 
@@ -24,16 +26,19 @@ colorama_init(autoreset=True)
 LLM_REQUEST = 25
 LLM_RESPONSE = 26
 TASK_HUB = 27
+COST = 28
 
 logging.addLevelName(LLM_REQUEST, "LLM_REQ")
 logging.addLevelName(LLM_RESPONSE, "LLM_RES")
 logging.addLevelName(TASK_HUB, "TASK_HUB")
+logging.addLevelName(COST, "COST_TRACKER")
 
 
 _COLOR_MAP: dict[int, str] = {
     LLM_REQUEST: Fore.CYAN,
     LLM_RESPONSE: Fore.GREEN,
-    TASK_HUB: Fore.YELLOW,
+    TASK_HUB: Fore.BLUE,
+    COST: Fore.YELLOW,
     logging.ERROR: Fore.RED,
     logging.CRITICAL: Fore.RED + Style.BRIGHT,
     logging.WARNING: Fore.MAGENTA,
@@ -59,9 +64,13 @@ class ColoredFormatter(logging.Formatter):
             The formatted, colored log string.
         """
         color = _COLOR_MAP.get(record.levelno, Fore.WHITE)
-        timestamp = self.formatTime(record, self.datefmt)
         level = record.levelname
         message = record.getMessage()
+        
+        if record.levelno == COST:
+            return f"{color}{message}{Style.RESET_ALL}"
+
+        timestamp = self.formatTime(record, self.datefmt)
         return f"{color}{timestamp} | {level:<8} | {message}{Style.RESET_ALL}"
 
 
@@ -87,46 +96,60 @@ def setup_logging(level: int = logging.DEBUG) -> None:
         root_logger.addHandler(handler)
 
 
-def get_logger(name: str) -> logging.Logger:
+class CustomLogger(logging.Logger):
+    """Custom logger class with dedicated methods for specific event types."""
+
+    def log_llm_request(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Log an outgoing LLM request.
+
+        Args:
+            message: Description of the request being sent.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self.log(LLM_REQUEST, message, *args, **kwargs)
+
+    def log_llm_response(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Log an incoming LLM response.
+
+        Args:
+            message: Description of the response received.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self.log(LLM_RESPONSE, message, *args, **kwargs)
+
+    def log_task_hub(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Log a task platform API interaction.
+
+        Args:
+            message: Description of the task hub event.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self.log(TASK_HUB, message, *args, **kwargs)
+
+    def log_cost(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Log a cost tracker event.
+
+        Args:
+            message: Description of the cost tracker event.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self.log(COST, message, *args, **kwargs)
+
+
+logging.setLoggerClass(CustomLogger)
+
+
+def get_logger(name: str) -> CustomLogger:
     """Get a named logger for a module.
 
     Args:
         name: Logger name, typically `__name__` of the calling module.
 
     Returns:
-        A configured Logger instance.
+        A configured CustomLogger instance.
     """
-    return logging.getLogger(name)
-
-
-# --- Convenience functions for typed logging ---
-
-
-def log_llm_request(logger: logging.Logger, message: str) -> None:
-    """Log an outgoing LLM request.
-
-    Args:
-        logger: The logger instance to use.
-        message: Description of the request being sent.
-    """
-    logger.log(LLM_REQUEST, message)
-
-
-def log_llm_response(logger: logging.Logger, message: str) -> None:
-    """Log an incoming LLM response.
-
-    Args:
-        logger: The logger instance to use.
-        message: Description of the response received.
-    """
-    logger.log(LLM_RESPONSE, message)
-
-
-def log_task_hub(logger: logging.Logger, message: str) -> None:
-    """Log a task platform API interaction.
-
-    Args:
-        logger: The logger instance to use.
-        message: Description of the task hub event.
-    """
-    logger.log(TASK_HUB, message)
+    return typing.cast(CustomLogger, logging.getLogger(name))
