@@ -1,0 +1,47 @@
+---
+description: Project directory layout and conventions
+alwaysApply: true
+---
+
+# Project Structure Rules
+
+## Directory Layout
+
+```
+mission_ag3ents/
+├── .agents/rules/           # AI assistant rules (committed)
+├── common/                  # Shared utilities
+│   ├── __init__.py
+│   ├── settings.py          # Pydantic-settings configuration
+│   ├── logging_config.py    # Colored logging setup
+│   ├── hub_client.py        # Task platform API client
+│   ├── prompt_loader.py     # Prompt template loader
+│   └── llm_api/             # LLM sub-package
+│       ├── __init__.py
+│       ├── http_client_provider.py  # Shared httpx.AsyncClient (lazy init)
+│       ├── llm_client.py            # LLMClient — AsyncOpenAI wrapper
+│       ├── model_repository.py      # OpenRouter /models cache
+│       └── cost_tracker.py          # Per-model token/cost tracking
+├── task_01/                 # Per-task solution folders
+│   ├── README.md
+│   ├── prompts/             # Prompt templates (.md)
+│   └── solution.py
+├── task_02/
+│   └── ...
+├── .env                     # Secrets (git-ignored)
+├── .env.example             # Template for .env
+├── pyproject.toml           # Dependencies & project config
+└── README.md
+```
+
+## Conventions
+- **`/common/`** — shared code used across tasks. Import as `from common.settings import Settings`.
+- **`/common/llm_api/`** — LLM sub-package.
+- **`/task_XX/`** — each task gets its own folder (e.g., `task_01`, `task_02`).
+- **Task README** — every task folder has a `README.md` documenting the objective, approach, and solution.
+- **Prompts** — stored as `.md` files in `/task_XX/prompts/` using `{placeholder}` syntax for variable substitution.
+- **`pyproject.toml`** — single source of truth for dependencies. Do not create `requirements.txt`.
+
+## Adding a New Task
+1. Create `task_XX/` directory with `README.md`, `prompts/`, and `solution.py`.
+2. Follow the same structure as existing tasks.

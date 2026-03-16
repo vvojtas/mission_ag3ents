@@ -1,15 +1,13 @@
-import httpx
 import asyncio
 from typing import Any
-
+from common.llm_api.http_client_provider import HttpClientProvider
 from common.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 class ModelRepository:
-    def __init__(self, open_router_key: str, base_url: str = "https://openrouter.ai/api/v1") -> None:
-        self.open_router_key = open_router_key
-        self.base_url = base_url
+    def __init__(self, http_client_provider: HttpClientProvider) -> None:
+        self.http_client_provider = http_client_provider
         self.models: dict[str, dict[str, Any]] | None = None
         self._refresh_lock = asyncio.Lock()
 
@@ -46,9 +44,9 @@ class ModelRepository:
             async with self._refresh_lock:
                 if self.models is None:
                     logger.info("Fetching models from OpenRouter...")
-                    async with httpx.AsyncClient(headers={"Authorization": f"Bearer {self.open_router_key}"}) as client:
-                        response = await client.get(f"{self.base_url}/models")
-                        response.raise_for_status()
-                        data = response.json()
-                        models_list = data.get("data", [])
-                        self.models = {m["id"]: m for m in models_list if "id" in m}
+                    http_client = await self.http_client_provider.get_client()
+                    response = await http_client.get("/models")
+                    response.raise_for_status()
+                    data = response.json()
+                    models_list = data.get("data", [])
+                    self.models = {m["id"]: m for m in models_list if "id" in m}

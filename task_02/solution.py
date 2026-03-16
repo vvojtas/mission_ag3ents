@@ -8,7 +8,8 @@ import logging
 
 from common import Settings, setup_logging
 from common.logging_config import get_logger
-from common.llm_client import LLMClient
+from common.llm_api.llm_client import LLMClient
+from common.llm_api.http_client_provider import HttpClientProvider
 from common.hub_client import HubClient
 
 
@@ -23,13 +24,15 @@ async def main() -> None:
     setup_logging(level=logging.INFO)
     settings = Settings()
     hub_client = HubClient(settings)
-    llm_client = LLMClient(settings)
 
     logger.info("Task 02 started")
 
-    # TODO: Implement solution here
+    async with HttpClientProvider(settings) as provider:
+        llm_client = LLMClient(provider)
 
-    await llm_client.print_cost()
+        # TODO: Implement solution here
+
+        await llm_client.print_cost()
 
     logger.info("Task 02 finished")
 
