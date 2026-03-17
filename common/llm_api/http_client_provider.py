@@ -20,7 +20,8 @@ class HttpClientProvider:
                 if self.client is None:
                     self.client = httpx.AsyncClient(
                         headers={"Authorization": f"Bearer {self.open_router_key}"},
-                        base_url=self.base_url
+                        base_url=self.base_url,
+                        timeout=httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=10.0),
                     )
         return self.client
     

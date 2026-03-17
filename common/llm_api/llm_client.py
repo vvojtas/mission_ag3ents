@@ -1,6 +1,6 @@
 import json as _json
 from dataclasses import dataclass
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, Optional, TypeVar, Union, Any
 
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ from common.llm_api.cost_tracker import CostTracker, ModelCost
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.llm_api.model_repository import ModelRepository
 from common.logging_config import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -22,6 +23,16 @@ class ParsedResponse(Generic[T]):
     raw_text: str | None
     output_parsed: T | None
 
+@dataclass
+class ToolCall:
+    name: str
+    call_id: str
+    arguments: dict[str, Any]
+    json_output: dict
+
+@dataclass
+class Reasoning:
+    summary: list[str]
 
 class LLMClient:
     def __init__(self, http_client_provider: HttpClientProvider):
@@ -35,7 +46,9 @@ class LLMClient:
         input: Union[str, ResponseInputParam],
         text_format: Optional[type[BaseModel]] = None,
         reasoning: Optional[dict] = None,
-    ) -> ParsedResponse:
+        tools: Optional[list[dict]] = None,
+        enable_web_search: Optional[bool] = False,
+    ) -> list[ParsedResponse | ToolCall | Reasoning]:
         """Send a request to the Responses API.
 
         Args:
@@ -44,12 +57,14 @@ class LLMClient:
             text_format: Optional Pydantic model class for structured output.
                          Its JSON schema is sent as ``text.format`` in the request.
             reasoning: Optional reasoning config dict (e.g. ``{"effort": "medium"}``).
-
+            tools: Optional list of tools to use.
+            enable_web_search: Optional flag to enable web search.
         Returns:
             A ParsedResponse with ``raw_text`` always set, and ``output_parsed``
             populated when ``text_format`` is provided and parsing succeeds.
         """
-        kwargs: dict = {"model": model, "input": input}
+        kwargs: dict = {"model": model, "input": input, "tools": tools, "reasoning": reasoning}
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
         if text_format is not None:
             kwargs["text"] = {
@@ -60,38 +75,56 @@ class LLMClient:
                     "strict": True,
                 }
             }
-        if reasoning is not None:
-            kwargs["reasoning"] = reasoning
+        
+        if enable_web_search:
+            kwargs["plugins"] = [{"id": "web"}]
 
         logger.log_llm_request(str(kwargs))
         http_client = await self.http_client_provider.get_client()
         response = await http_client.post("/responses", json=kwargs)
         if response.status_code != 200:
             error = response.json()
-            logger.error(f"LLM API Error: {error['error']['message']}")
+            logger.error(f"LLM API Error: {error}")
             response.raise_for_status()
 
         data = response.json()
         usage = data.get("usage")
         if usage is not None:
+            logger.log_cost(str(usage))
             await self.cost_tracker.update_usage(model, usage["input_tokens"], usage["output_tokens"])
 
         output_items = data.get("output", [])
-        message_output = next(
-            (item for item in output_items if item.get("type") == "message"),
-            None,
-        )
-        raw_text: str | None = message_output["content"][0]["text"] if message_output else None
-        logger.log_llm_response(str(raw_text))
+        logger.log_llm_response(str(output_items))
 
-        output_parsed: BaseModel | None = None
-        if text_format and raw_text:
-            try:
-                output_parsed = text_format.model_validate(_json.loads(raw_text))
-            except Exception as exc:
-                logger.error(f"Failed to parse structured response: {exc}")
+        response_messages = []
+        for item in output_items:
+            if item.get("type") == "message":
+                raw_text: str | None = item["content"][0]["text"] if item else None
 
-        return ParsedResponse(raw_text=raw_text, output_parsed=output_parsed)
+                output_parsed: BaseModel | None = None
+                if text_format and raw_text:
+                    try:
+                        output_parsed = text_format.model_validate(_json.loads(raw_text))
+                    except Exception as exc:
+                        logger.error(f"Failed to parse structured response: {exc}")
+
+                response_messages.append(ParsedResponse[BaseModel](raw_text=raw_text, output_parsed=output_parsed))
+
+            elif item.get("type") == "function_call":
+                tool_call = ToolCall(
+                    name=item["name"],
+                    call_id=item["call_id"],
+                    arguments= _json.loads(item["arguments"]) if isinstance(item["arguments"], str) else item["arguments"],
+                    json_output=item,
+                )
+                response_messages.append(tool_call)
+            elif item.get("type") == "reasoning":
+                response_messages.append(Reasoning(summary=item["summary"]))
+            else:
+                logger.error(f"Unknown item type: {item.get('type')}")
+
+
+        return response_messages
 
 
     async def print_cost(self):

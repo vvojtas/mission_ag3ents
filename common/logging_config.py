@@ -27,18 +27,21 @@ LLM_REQUEST = 25
 LLM_RESPONSE = 26
 TASK_HUB = 27
 COST = 28
+TOOL_CALL = 29
 
 logging.addLevelName(LLM_REQUEST, "LLM_REQ")
 logging.addLevelName(LLM_RESPONSE, "LLM_RES")
 logging.addLevelName(TASK_HUB, "TASK_HUB")
 logging.addLevelName(COST, "COST_TRACKER")
+logging.addLevelName(TOOL_CALL, "TOOL_CALL")
 
 
 _COLOR_MAP: dict[int, str] = {
     LLM_REQUEST: Fore.CYAN,
     LLM_RESPONSE: Fore.GREEN,
     TASK_HUB: Fore.BLUE,
-    COST: Fore.YELLOW,
+    COST: Fore.YELLOW,  
+    TOOL_CALL: Fore.MAGENTA,
     logging.ERROR: Fore.RED,
     logging.CRITICAL: Fore.RED + Style.BRIGHT,
     logging.WARNING: Fore.MAGENTA,
@@ -138,6 +141,16 @@ class CustomLogger(logging.Logger):
             **kwargs: Arbitrary keyword arguments.
         """
         self.log(COST, message, *args, **kwargs)
+
+    def log_tool_call(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Log a tool call.
+
+        Args:
+            message: Description of the tool call.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self.log(TOOL_CALL, message, *args, **kwargs)
 
 
 logging.setLoggerClass(CustomLogger)

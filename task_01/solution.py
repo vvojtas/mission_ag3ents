@@ -10,7 +10,7 @@ import logging
 
 from common import Settings, setup_logging
 from common.logging_config import get_logger
-from common.llm_api.llm_client import LLMClient
+from common.llm_api.llm_client import LLMClient, ParsedResponse
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.hub_client import HubClient
 from common.prompt_loader import PromptLoader
@@ -33,18 +33,16 @@ class PersonClasifiedList(BaseModel):
 
 
 async def main() -> None:
-    """Entry point for Task 01.
-
-    Loads settings, sets up logging, and executes the task solution.
+    """
+    Entry point for Task 01.
     """
     setup_logging(level=logging.DEBUG)
     settings = Settings()
-    hub_client = HubClient(settings)
     prompt_loader = PromptLoader(Path(__file__).parent / "prompts")
 
     logger.info("Task 01 started")
 
-    async with HttpClientProvider(settings) as provider:
+    async with HubClient(settings) as hub_client, HttpClientProvider(settings) as provider:
         llm_client = LLMClient(provider)
 
         file_path = Path(__file__).parent / ".data" / "people.csv"
@@ -80,20 +78,21 @@ async def main() -> None:
             people_json=people_json
         )
 
-        response = await llm_client.responses(
+        responses = await llm_client.responses(
             #model="mistralai/mistral-nemo",
             model="google/gemini-2.5-flash-lite",
             input=messages,
             text_format=PersonClasifiedList,
             reasoning={"effort": "medium"},
         )
+        parsed = next((r for r in responses if isinstance(r, ParsedResponse)), None)
 
-        if not response.output_parsed:
+        if not parsed or not parsed.output_parsed:
             logger.error("Failed to parse LLM response")
             return
 
         final_answer = []
-        for person, classified in zip(filtered_people, response.output_parsed.persons):
+        for person, classified in zip(filtered_people, parsed.output_parsed.persons):
             if classified.name != f"{person['name']} {person['surname']}":
                 logger.error(f"Full name mismatch: {classified.name} != {person['name']} {person['surname']}")
                 continue
