@@ -1,13 +1,15 @@
 # Task 01
 
 ## Objective
-<!-- Describe what this task asks you to do -->
+Find people who are male, born in Grudziądz, aged 20–40, and work in transport. Return their details with industry tags.
 
 ## Approach
-<!-- Outline your solution strategy -->
+1. Filter CSV by gender, birth place, and age.
+2. Ask the LLM to classify each person's job into industries (IT, transport, edukacja, etc.).
+3. Keep only those tagged "transport" and submit.
 
-## Solution
-<!-- Notes on the final solution, what worked, what didn't -->
+## LLM usage
+Single prompt with **structured output** (Pydantic schema). Batch classification of all people in one call. Optional reasoning field for interpretability (not required for correctness).
 
 ## Notes
 | Model | Notes |

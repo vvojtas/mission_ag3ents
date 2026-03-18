@@ -1,13 +1,17 @@
 # Task 02
 
 ## Objective
-<!-- Describe what this task asks you to do -->
+Find the person (from the transport list) whose location is closest to any power plant. Return their name, surname, access level, and the code of the closest power plant.
 
 ## Approach
-<!-- Outline your solution strategy -->
+1. Load people and power plant locations.
+2. Use web search to get coordinates for power plants.
+3. For each person: get location via tool, compute distances to power plants via tool.
+4. Find the minimum-distance person–power-plant pair.
+5. Fetch that person's access level via tool and return the answer.
 
-## Solution
-<!-- Notes on the final solution, what worked, what didn't -->
+## LLM usage
+**Agentic loop** with tools: get_location, find_shortest_distance, get_access_level. Web search enabled for geocoding. LLM orchestrates tool calls and iterates over people. Structured output for the final answer.
 
 ## Notes
 <!-- Any additional observations, edge cases, or learnings -->
