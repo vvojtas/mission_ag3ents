@@ -18,10 +18,9 @@ T = TypeVar("T", bound=BaseModel)
 
 @dataclass
 class ParsedResponse(Generic[T]):
-    """Holds the raw text and optionally the parsed Pydantic model from a Responses API call."""
-
     raw_text: str | None
     output_parsed: T | None
+    json_output: dict[str, Any]
 
 @dataclass
 class ToolCall:
@@ -33,6 +32,7 @@ class ToolCall:
 @dataclass
 class Reasoning:
     summary: list[str]
+    json_output: dict[str, Any]
 
 class LLMClient:
     def __init__(self, http_client_provider: HttpClientProvider):
@@ -45,9 +45,8 @@ class LLMClient:
         model: str,
         input: Union[str, ResponseInputParam],
         text_format: Optional[type[BaseModel]] = None,
-        reasoning: Optional[dict] = None,
-        tools: Optional[list[dict]] = None,
         enable_web_search: Optional[bool] = False,
+        **kwargs: Any,
     ) -> list[ParsedResponse | ToolCall | Reasoning]:
         """Send a request to the Responses API.
 
@@ -63,8 +62,8 @@ class LLMClient:
             A ParsedResponse with ``raw_text`` always set, and ``output_parsed``
             populated when ``text_format`` is provided and parsing succeeds.
         """
-        kwargs: dict = {"model": model, "input": input, "tools": tools, "reasoning": reasoning}
-        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        kwargs["model"] = model
+        kwargs["input"] = input
 
         if text_format is not None:
             kwargs["text"] = {
@@ -94,7 +93,7 @@ class LLMClient:
             await self.cost_tracker.update_usage(model, usage["input_tokens"], usage["output_tokens"])
 
         output_items = data.get("output", [])
-        logger.log_llm_response(str(output_items))
+        logger.log_llm_response(str(data))
 
         response_messages = []
         for item in output_items:
@@ -108,7 +107,13 @@ class LLMClient:
                     except Exception as exc:
                         logger.error(f"Failed to parse structured response: {exc}")
 
-                response_messages.append(ParsedResponse[BaseModel](raw_text=raw_text, output_parsed=output_parsed))
+                parsed_response = ParsedResponse[BaseModel](
+                    raw_text=raw_text, 
+                    output_parsed=output_parsed, 
+                    json_output=item,
+                )
+
+                response_messages.append(parsed_response)
 
             elif item.get("type") == "function_call":
                 tool_call = ToolCall(
@@ -119,7 +124,11 @@ class LLMClient:
                 )
                 response_messages.append(tool_call)
             elif item.get("type") == "reasoning":
-                response_messages.append(Reasoning(summary=item["summary"]))
+                reasoning_response = Reasoning(
+                    summary=item["summary"],
+                    json_output=item,
+                )
+                response_messages.append(reasoning_response)
             else:
                 logger.error(f"Unknown item type: {item.get('type')}")
 

@@ -81,9 +81,10 @@ async def main() -> None:
                 model="openai/gpt-5.4-nano",
                 input=messages,
                 tools=[get_location_tool, find_shortest_distance_tool_labels, get_access_level_tool],
-                max_iterations=150,
+                max_iterations=20,
                 text_format=FindHimAnswer,
-                reasoning={"effort": "low"},
+                reasoning={"effort": "low", "summary": "auto" },
+                parallel_tool_calls=True,
                 enable_web_search=True,
             )
             if not response or not response.output_parsed:

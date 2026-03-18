@@ -26,13 +26,15 @@ class ToolsLoop:
                 if isinstance(response, ParsedResponse):
                     return response
 
+            messages.extend([message.json_output for message in responses if message.json_output is not None])
+
             tool_calls = [response for response in responses if isinstance(response, ToolCall)]
-            messages.extend([tc.json_output for tc in tool_calls])
             if not tool_calls:
                 raise ValueError("No actionable responses found")
             tool_responses = await asyncio.gather(
                 *[self._run_tool(tc) for tc in tool_calls]
             )
+            
             messages.extend(tool_responses)
         
         

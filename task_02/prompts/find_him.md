@@ -13,7 +13,7 @@ Return the person's name, surname, access level, and the code of the closest pow
 
 Find a person that has location close to a powerplant. Return their details, access level with the closest power plant code.
 1) Start by using websearch to find latitude and longitude of each power plant (corresponding citi coordinats are enough).
-2) Iterate over each person:
+2) For all persons (you can run tools in parallel):
     a) Use tool to get locations corresponding to person (with latitude and longitude).
     b) Use tool to calculate closest powerplant 
 3) Find a smallest distance person - power plant pair
