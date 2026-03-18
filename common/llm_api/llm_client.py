@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from common.llm_api.cost_tracker import CostTracker, ModelCost
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.llm_api.model_repository import ModelRepository
-from common.logging_config import get_logger
+from common.logging_config import format_for_logging, get_logger
 
 
 logger = get_logger(__name__)
@@ -78,7 +78,7 @@ class LLMClient:
         if enable_web_search:
             kwargs["plugins"] = [{"id": "web"}]
 
-        logger.log_llm_request(str(kwargs))
+        logger.log_llm_request(format_for_logging(kwargs, "LLM Request"))
         http_client = await self.http_client_provider.get_client()
         response = await http_client.post("/responses", json=kwargs)
         if response.status_code != 200:
@@ -89,11 +89,11 @@ class LLMClient:
         data = response.json()
         usage = data.get("usage")
         if usage is not None:
-            logger.log_cost(str(usage))
+            logger.log_cost(format_for_logging(usage, "Token Usage"))
             await self.cost_tracker.update_usage(model, usage["input_tokens"], usage["output_tokens"])
 
         output_items = data.get("output", [])
-        logger.log_llm_response(str(data))
+        logger.log_llm_response(format_for_logging(data, "LLM Response"))
 
         response_messages = []
         for item in output_items:

@@ -34,7 +34,7 @@ async def main() -> None:
     """
     Entry point for Task 02.
     """
-    setup_logging(level=logging.INFO)
+    setup_logging(level=logging.INFO, task_dir=Path(__file__).parent)
     settings = Settings()
 
     logger.info("Task 02 started")

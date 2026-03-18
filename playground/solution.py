@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 async def main() -> None:
     """Entry point for the playground."""
-    setup_logging(level=logging.INFO)
+    setup_logging(level=logging.INFO, task_dir=Path(__file__).parent)
     settings = Settings()
 
     logger.info("Playground started")

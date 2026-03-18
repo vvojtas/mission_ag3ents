@@ -36,7 +36,7 @@ async def main() -> None:
     """
     Entry point for Task 01.
     """
-    setup_logging(level=logging.DEBUG)
+    setup_logging(level=logging.DEBUG, task_dir=Path(__file__).parent)
     settings = Settings()
     prompt_loader = PromptLoader(Path(__file__).parent / "prompts")
 

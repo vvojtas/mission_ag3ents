@@ -9,11 +9,18 @@ output is easy to scan at a glance:
 - **Cost Tracker** (yellow)     — cost tracker events
 - **Error** (red)           — errors and exceptions
 - **General** (white)       — default informational messages
+
+Supports dual output: colored console and plain-text log file
+(per-task `.logs/` directory) for persistence.
 """
 
+import json
 import logging
 import sys
 import typing
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 from colorama import Fore, Style, init as colorama_init
 
@@ -50,6 +57,9 @@ _COLOR_MAP: dict[int, str] = {
 }
 
 
+_LOG_FORMAT = "{timestamp} | {level:<8} | {message}"
+
+
 class ColoredFormatter(logging.Formatter):
     """Formatter that applies colors based on log level.
 
@@ -58,45 +68,69 @@ class ColoredFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format a log record with the appropriate color.
-
-        Args:
-            record: The log record to format.
-
-        Returns:
-            The formatted, colored log string.
-        """
         color = _COLOR_MAP.get(record.levelno, Fore.WHITE)
-        level = record.levelname
         message = record.getMessage()
-        
+
         if record.levelno == COST:
             return f"{color}{message}{Style.RESET_ALL}"
 
         timestamp = self.formatTime(record, self.datefmt)
-        return f"{color}{timestamp} | {level:<8} | {message}{Style.RESET_ALL}"
+        line = _LOG_FORMAT.format(
+            timestamp=timestamp, level=record.levelname, message=message,
+        )
+        return f"{color}{line}{Style.RESET_ALL}"
 
 
-def setup_logging(level: int = logging.DEBUG) -> None:
-    """Configure the root logger with colored console output.
+class PlainFileFormatter(logging.Formatter):
+    """Plain text formatter for file output — no ANSI color codes."""
 
-    Sets up a single StreamHandler with the ColoredFormatter.
-    Call this once at application startup.
+    def format(self, record: logging.LogRecord) -> str:
+        message = record.getMessage()
+
+        if record.levelno == COST:
+            return message
+
+        timestamp = self.formatTime(record, self.datefmt)
+        return _LOG_FORMAT.format(
+            timestamp=timestamp, level=record.levelname, message=message,
+        )
+
+
+def setup_logging(
+    level: int = logging.DEBUG,
+    task_dir: Path | None = None,
+) -> None:
+    """Configure the root logger with colored console output and optional file output.
+
+    Sets up a StreamHandler (colored) and, when *task_dir* is given,
+    a FileHandler that writes to ``<task_dir>/.logs/run_<timestamp>.log``.
 
     Args:
         level: Minimum log level to display. Defaults to DEBUG.
+        task_dir: Task directory. When provided, a `.logs/` sub-directory
+            is created and a plain-text log file is written there.
     """
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
 
-    # Avoid adding duplicate handlers on repeated calls
     if not root_logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(level)
-        handler.setFormatter(
-            ColoredFormatter(datefmt="%Y-%m-%d %H:%M:%S")
+        console = logging.StreamHandler(sys.stdout)
+        console.setLevel(level)
+        console.setFormatter(ColoredFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+        root_logger.addHandler(console)
+
+    if task_dir is not None:
+        logs_dir = Path(task_dir) / ".logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_file = logs_dir / f"run_{ts}.log"
+
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setLevel(level)
+        file_handler.setFormatter(
+            PlainFileFormatter(datefmt="%Y-%m-%d %H:%M:%S")
         )
-        root_logger.addHandler(handler)
+        root_logger.addHandler(file_handler)
 
 
 class CustomLogger(logging.Logger):
@@ -154,6 +188,27 @@ class CustomLogger(logging.Logger):
 
 
 logging.setLoggerClass(CustomLogger)
+
+
+def format_for_logging(data: Any, label: str = "") -> str:
+    """Format a dict/object as pretty-printed JSON for log output.
+
+    Args:
+        data: The data to format (dict, list, or any JSON-serialisable value).
+        label: Optional header label (e.g. ``"LLM Request"``).
+
+    Returns:
+        A multi-line string with an optional header and indented JSON.
+    """
+    separator = "=" * 60
+    try:
+        body = json.dumps(data, indent=2, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        body = str(data)
+
+    if label:
+        return f"\n{separator}\n  {label}\n{separator}\n{body}"
+    return f"\n{body}"
 
 
 def get_logger(name: str) -> CustomLogger:
