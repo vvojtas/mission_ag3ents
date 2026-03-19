@@ -190,21 +190,39 @@ class CustomLogger(logging.Logger):
 logging.setLoggerClass(CustomLogger)
 
 
-def format_for_logging(data: Any, label: str = "") -> str:
+def _truncate(obj: Any, max_len: int) -> Any:
+    """Recursively truncate string values that exceed *max_len* characters."""
+    if isinstance(obj, str):
+        return obj[:max_len] + "[…]" if len(obj) > max_len else obj
+    if isinstance(obj, dict):
+        return {k: _truncate(v, max_len) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_truncate(item, max_len) for item in obj]
+    return obj
+
+
+def format_for_logging(
+    data: Any,
+    label: str = "",
+    max_value_length: int = 1000,
+) -> str:
     """Format a dict/object as pretty-printed JSON for log output.
 
     Args:
         data: The data to format (dict, list, or any JSON-serialisable value).
         label: Optional header label (e.g. ``"LLM Request"``).
+        max_value_length: Truncate individual string values longer than this.
+            Set to ``0`` to disable truncation.
 
     Returns:
         A multi-line string with an optional header and indented JSON.
     """
+    display_data = _truncate(data, max_value_length) if max_value_length else data
     separator = "=" * 60
     try:
-        body = json.dumps(data, indent=2, ensure_ascii=False, default=str)
+        body = json.dumps(display_data, indent=2, ensure_ascii=False, default=str)
     except (TypeError, ValueError):
-        body = str(data)
+        body = str(display_data)
 
     if label:
         return f"\n{separator}\n  {label}\n{separator}\n{body}"
