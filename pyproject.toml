@@ -12,6 +12,8 @@ dependencies = [
     "colorama",
     "aiofiles>=25.1.0",
     "haversine>=2.9.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [tool.setuptools.packages.find]
