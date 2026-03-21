@@ -5,7 +5,7 @@ from typing import Generic, Optional, TypeVar, Union, Any
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel
 
-from common.llm_api.cost_tracker import CostTracker, ModelCost
+from common.llm_api.cost_tracker import CostTracker
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.llm_api.model_repository import ModelRepository
 from common.logging_config import format_for_logging, get_logger
@@ -90,7 +90,7 @@ class LLMClient:
         usage = data.get("usage")
         if usage is not None:
             logger.log_cost(format_for_logging(usage, "Token Usage"))
-            await self.cost_tracker.update_usage(model, usage["input_tokens"], usage["output_tokens"])
+            await self.cost_tracker.update_usage(model, usage)
 
         output_items = data.get("output", [])
         logger.log_llm_response(format_for_logging(data, "LLM Response"))
@@ -138,16 +138,4 @@ class LLMClient:
 
     async def print_cost(self):
         """Print the current token usage for all models in a grid format."""
-
-        async def fetch_prices(model_names: set[str]) -> dict[str, ModelCost]:
-            models = await self.model_repository.get_models(model_names)
-            return {
-                model_id: ModelCost(
-                    model_name=model_id,
-                    input_tokens_cost=float(model.get("pricing", {}).get("prompt", 0)),
-                    output_tokens_cost=float(model.get("pricing", {}).get("completion", 0))
-                )
-                for model_id, model in models.items() if model_id in model_names
-            }
-
-        await self.cost_tracker.print_cost(fetch_prices)
+        await self.cost_tracker.print_cost()

@@ -42,13 +42,14 @@ async def main() -> None:
             messages = prompt_loader.load_prompt("hello")
 
             response = await tools_loop.run(
-                model="google/gemini-2.5-flash-lite",
+                #model="google/gemini-2.5-flash-lite",
+                model="openai/gpt-5.4-nano",
                 reasoning={"effort": "low", "summary": "auto"},
                 input=messages,
                 tools=[echo_tool],
                 max_iterations=10,
                 text_format=GreetingResponse,
-                enable_web_search=False,
+                enable_web_search=True,
             )
 
             logger.info("Final response: %s", response.raw_text)
