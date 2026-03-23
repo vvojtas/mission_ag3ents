@@ -62,6 +62,10 @@ cp .env.example .env
 uv run python -m task_01.solution
 ```
 
+### Running mco inspector
+
+npx @modelcontextprotocol/inspector node build/index.js
+
 ## Adding a New Task
 
 1. Create a new folder: `task_XX/`

@@ -46,7 +46,6 @@ async def main() -> None:
                 model="openai/gpt-5.4-nano",
                 reasoning={"effort": "low", "summary": "auto"},
                 input=messages,
-                tools=[echo_tool],
                 max_iterations=10,
                 text_format=GreetingResponse,
                 enable_web_search=True,

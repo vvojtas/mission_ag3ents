@@ -76,7 +76,7 @@ class HubClient:
         response.raise_for_status()
         return response.json()
 
-    async def call_api(self, url: str, json: dict, add_api_key: bool = True) -> dict:
+    async def call_api(self, url: str, json: dict, add_api_key: bool = True) -> dict | list[dict]:
         """Send a POST request to an arbitrary hub API endpoint.
 
         Args:

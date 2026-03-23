@@ -7,6 +7,16 @@
             "request": "launch",
             "module": "${relativeFileDirname}.solution",
             "cwd": "${workspaceFolder}",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "task_02: MCP server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "task_02.tools.mcp_server",
+            "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "justMyCode": true
         }

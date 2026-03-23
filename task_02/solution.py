@@ -7,6 +7,7 @@ import asyncio
 import logging
 
 from common import Settings, setup_logging
+from common.llm_api.mcp_client import MCPClient
 from common.logging_config import get_logger
 from common.llm_api.llm_client import LLMClient
 from common.llm_api.http_client_provider import HttpClientProvider
@@ -14,13 +15,10 @@ from common.hub_client import HubClient
 from pathlib import Path
 import aiofiles
 import json
-from .tools.get_location import GetLocationTool, GetLocationModel
-from .tools.find_shortest_distance import FindShortestDistanceTool, FindShortestDistanceModel
-from .tools.get_access_level import GetAccessLevelTool, GetAccessLevelModel
-from .tools.find_shortest_distance_labels import FindShortestDistanceLabelsTool, FindShortestDistanceLabelsModel
 from pydantic import BaseModel, Field
 from common.prompt_loader import PromptLoader
 from common.llm_api.tools_loop import ToolsLoop
+from .tools.mcp_server import mcp as mcp_server_app
 
 logger = get_logger(__name__)
 
@@ -39,25 +37,24 @@ async def main() -> None:
 
     logger.info("Task 02 started")
 
-    async with HttpClientProvider(settings) as provider, HubClient(settings) as hub_client:
+    
+    async with HttpClientProvider(settings) as provider, HubClient(settings) as hub_client, MCPClient(mcp_server_app) as mcp_client:
         llm_client = LLMClient(provider)
         try:
             prompt_loader = PromptLoader(Path(__file__).parent / "prompts")
-            get_location_tool = GetLocationTool(hub_client)
-            find_shortest_distance_tool_labels = FindShortestDistanceLabelsTool()
-            get_access_level_tool = GetAccessLevelTool(hub_client)
 
-            tools_loop = ToolsLoop(llm_client, [get_location_tool, find_shortest_distance_tool_labels, get_access_level_tool])
+            tools_loop = ToolsLoop(llm_client, mcp_clients=[mcp_client])
+            await tools_loop.initialize()
 
             file_path = Path(__file__).parent / ".data" / "findhim_locations.json"
             await hub_client.download_file(f"data/{settings.hub_api_key}/findhim_locations.json", str(file_path))
 
-            async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
+            async with aiofiles.open(file_path, mode="rt", encoding="utf-8") as f:
                 content = await f.read()
             locations_data = json.loads(content)
 
             file_path = Path(__file__).parent / ".data" / "people_transport.json"
-            async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
+            async with aiofiles.open(file_path, mode="rt", encoding="utf-8") as f:
                 content = await f.read()
             people_data = json.loads(content)
 
@@ -78,9 +75,9 @@ async def main() -> None:
 
             response = await tools_loop.run(
                 #model="google/gemini-2.5-flash-lite",
-                model="openai/gpt-5.4-nano",
+                #model="openai/gpt-5.4-nano",
+                model="openai/gpt-5-mini",
                 input=messages,
-                tools=[get_location_tool, find_shortest_distance_tool_labels, get_access_level_tool],
                 max_iterations=20,
                 text_format=FindHimAnswer,
                 reasoning={"effort": "low", "summary": "auto" },
@@ -90,6 +87,7 @@ async def main() -> None:
             if not response or not response.output_parsed:
                 logger.error("Failed to parse LLM response")
                 return
+            logger.info(f"Got LLM response: {response.output_parsed}")
             hub_response = await hub_client.post_answer(task_name="findhim", answer=response.output_parsed.model_dump())
             logger.info(f"Task 'findhim' submitted successfully: {hub_response}")
         finally:
