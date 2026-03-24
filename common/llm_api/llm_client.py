@@ -35,9 +35,9 @@ class Reasoning:
     json_output: dict[str, Any]
 
 class LLMClient:
-    def __init__(self, http_client_provider: HttpClientProvider):
+    def __init__(self, http_client_provider: HttpClientProvider, cost_tracker: CostTracker | None = None):
         self.http_client_provider = http_client_provider
-        self.cost_tracker = CostTracker()
+        self.cost_tracker = cost_tracker or CostTracker()
         self.model_repository = ModelRepository(http_client_provider)
 
     async def responses(
