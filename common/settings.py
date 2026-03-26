@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         openrouter_api_key: API key for OpenRouter LLM access.
         hub_api_key: API key for the AI Devs competition platform.
         hub_api_url: Base URL for the AI Devs task API.
+        dashboard_ws_url: WebSocket URL for the optional dashboard.
     """
 
     model_config = SettingsConfigDict(
@@ -30,3 +31,5 @@ class Settings(BaseSettings):
     openrouter_api_key: str = Field(default=...)
     hub_api_key: str = Field(default=...)
     hub_api_url: str = "https://api.example.com"
+
+    dashboard_ws_url: str = "ws://127.0.0.1:8765/dashboard/console/ws"

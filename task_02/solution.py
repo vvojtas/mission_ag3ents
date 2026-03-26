@@ -91,7 +91,7 @@ async def main() -> None:
             hub_response = await hub_client.post_answer(task_name="findhim", answer=response.output_parsed.model_dump())
             logger.info(f"Task 'findhim' submitted successfully: {hub_response}")
         finally:
-            await llm_client.print_cost()
+            llm_client.print_cost()
     logger.info("Task 02 finished")
 
 if __name__ == "__main__":

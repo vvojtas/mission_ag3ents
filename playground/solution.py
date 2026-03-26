@@ -57,7 +57,7 @@ async def main() -> None:
                 logger.info("Greeting: %s", parsed.greeting)
                 logger.info("Origin: %s", parsed.origin)
         finally:
-            await llm_client.print_cost()
+            llm_client.print_cost()
 
     logger.info("Playground finished")
 

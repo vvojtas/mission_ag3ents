@@ -13,13 +13,14 @@ dependencies = [
     "aiofiles>=25.1.0",
     "haversine>=2.9.0",
     "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
+    "uvicorn[standard]>=0.41.0",
     "mcp[cli]>=1.26.0",
     "fastmcp>=3.1.1",
+    "websockets>=16.0",
 ]
 
 [tool.setuptools.packages.find]
-include = ["common*", "task_*"]
+include = ["common*", "task_*", "dashboard*"]
 
 [project.optional-dependencies]
 dev = [

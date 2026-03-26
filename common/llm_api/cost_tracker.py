@@ -2,12 +2,18 @@ import asyncio
 from dataclasses import dataclass
 from typing import Dict
 
+from common.events import Usage
 from common.logging_config import get_logger
 
 
 @dataclass
 class ModelUsage:
-    """Tracks token usage, cost, and request counts for a specific model."""
+    """Mutable token-usage accumulator for a single model.
+
+    Used internally by ``CostTracker``; converted to the immutable ``Usage``
+    event type when publishing cost reports.
+    """
+
     input_tokens: int = 0
     cached_tokens: int = 0
     output_tokens: int = 0
@@ -18,7 +24,22 @@ class ModelUsage:
     request_count: int = 0
 
 
+from common.cost_report import log_cost_report
+
 logger = get_logger(__name__)
+
+
+def _model_usage_to_event(mu: ModelUsage) -> Usage:
+    return Usage(
+        input_tokens=mu.input_tokens,
+        cached_tokens=mu.cached_tokens,
+        output_tokens=mu.output_tokens,
+        reasoning_tokens=mu.reasoning_tokens,
+        cost=mu.cost,
+        upstream_inference_input_cost=mu.upstream_inference_input_cost,
+        upstream_inference_output_cost=mu.upstream_inference_output_cost,
+        request_count=mu.request_count,
+    )
 
 
 class CostTracker:
@@ -52,7 +73,6 @@ class CostTracker:
         cost = usage.get("cost")
         if cost is None:
             logger.warning("Cost not found in usage: %s", usage)
-            
 
         async with self._model_locks[model]:
             mu = self.model_usage[model]
@@ -65,24 +85,11 @@ class CostTracker:
             mu.upstream_inference_output_cost += cost_details.get("upstream_inference_output_cost", 0.0)
             mu.request_count += 1
 
-    async def print_cost(self):
+    def print_cost(self) -> None:
         """Print the current token usage for all models in a vertical format."""
-        if not self.model_usage:
-            logger.log_cost("No token usage recorded yet.")
-            return
+        usage_events = {model: _model_usage_to_event(mu) for model, mu in self.model_usage.items()}
+        log_cost_report(logger, usage_events)
 
-        for model, u in self.model_usage.items():
-            logger.log_cost("=" * 40)
-            logger.log_cost(f"  Model:        {model}")
-            logger.log_cost("-" * 40)
-            logger.log_cost(f"  Cost:         ${u.cost:.6f}")
-            logger.log_cost(f"  Input Cost:   ${u.upstream_inference_input_cost:.6f}")
-            logger.log_cost(f"  Output Cost:  ${u.upstream_inference_output_cost:.6f}")
-            logger.log_cost("-" * 40)
-            logger.log_cost(f"  Input Tokens:   {u.input_tokens}")
-            logger.log_cost(f"  Cached Tokens:  {u.cached_tokens}")
-            logger.log_cost(f"  Output Tokens:  {u.output_tokens}")
-            logger.log_cost(f"  Reason Tokens:  {u.reasoning_tokens}")
-            logger.log_cost("-" * 40)
-            logger.log_cost(f"  Requests:       {u.request_count}")
-            logger.log_cost("=" * 40)
+    def snapshot(self) -> dict[str, Usage]:
+        """Return an immutable snapshot of current usage for all models."""
+        return {model: _model_usage_to_event(mu) for model, mu in self.model_usage.items()}

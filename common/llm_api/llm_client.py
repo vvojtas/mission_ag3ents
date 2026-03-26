@@ -1,10 +1,10 @@
 import json as _json
-from dataclasses import dataclass
-from typing import Generic, Optional, TypeVar, Union, Any
+from typing import Optional, Union, Any
 
 from openai.types.responses import ResponseInputParam
 from pydantic import BaseModel
 
+from common.events import ParsedResponse, Reasoning, ToolCall
 from common.llm_api.cost_tracker import CostTracker
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.llm_api.model_repository import ModelRepository
@@ -13,26 +13,6 @@ from common.logging_config import format_for_logging, get_logger
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound=BaseModel)
-
-
-@dataclass
-class ParsedResponse(Generic[T]):
-    raw_text: str | None
-    output_parsed: T | None
-    json_output: dict[str, Any]
-
-@dataclass
-class ToolCall:
-    name: str
-    call_id: str
-    arguments: dict[str, Any]
-    json_output: dict
-
-@dataclass
-class Reasoning:
-    summary: list[str]
-    json_output: dict[str, Any]
 
 class LLMClient:
     def __init__(self, http_client_provider: HttpClientProvider, cost_tracker: CostTracker | None = None):
@@ -55,12 +35,12 @@ class LLMClient:
             input: A plain string or a structured ResponseInputParam list.
             text_format: Optional Pydantic model class for structured output.
                          Its JSON schema is sent as ``text.format`` in the request.
-            reasoning: Optional reasoning config dict (e.g. ``{"effort": "medium"}``).
-            tools: Optional list of tools to use.
             enable_web_search: Optional flag to enable web search.
+
         Returns:
-            A ParsedResponse with ``raw_text`` always set, and ``output_parsed``
-            populated when ``text_format`` is provided and parsing succeeds.
+            A list of ``ParsedResponse``, ``ToolCall``, and ``Reasoning`` events.
+            ``ParsedResponse.raw_text`` is always set; ``output_parsed`` is populated
+            when ``text_format`` is provided and parsing succeeds.
         """
         kwargs["model"] = model
         kwargs["input"] = input
@@ -74,7 +54,7 @@ class LLMClient:
                     "strict": True,
                 }
             }
-        
+
         if enable_web_search:
             kwargs["plugins"] = [{"id": "web"}]
 
@@ -95,7 +75,7 @@ class LLMClient:
         output_items = data.get("output", [])
         logger.log_llm_response(format_for_logging(data, "LLM Response"))
 
-        response_messages = []
+        response_messages: list[ParsedResponse | ToolCall | Reasoning] = []
         for item in output_items:
             if item.get("type") == "message":
                 raw_text: str | None = item["content"][0]["text"] if item else None
@@ -107,35 +87,29 @@ class LLMClient:
                     except Exception as exc:
                         logger.error(f"Failed to parse structured response: {exc}")
 
-                parsed_response = ParsedResponse[BaseModel](
-                    raw_text=raw_text, 
-                    output_parsed=output_parsed, 
+                response_messages.append(ParsedResponse(
                     json_output=item,
-                )
-
-                response_messages.append(parsed_response)
+                    raw_text=raw_text,
+                    output_parsed=output_parsed,
+                ))
 
             elif item.get("type") == "function_call":
-                tool_call = ToolCall(
+                response_messages.append(ToolCall(
                     name=item["name"],
                     call_id=item["call_id"],
-                    arguments= _json.loads(item["arguments"]) if isinstance(item["arguments"], str) else item["arguments"],
+                    arguments=_json.loads(item["arguments"]) if isinstance(item["arguments"], str) else item["arguments"],
                     json_output=item,
-                )
-                response_messages.append(tool_call)
+                ))
             elif item.get("type") == "reasoning":
-                reasoning_response = Reasoning(
-                    summary=item["summary"],
+                response_messages.append(Reasoning(
+                    summary=item.get("summary") or [],
                     json_output=item,
-                )
-                response_messages.append(reasoning_response)
+                ))
             else:
                 logger.error(f"Unknown item type: {item.get('type')}")
 
-
         return response_messages
 
-
-    async def print_cost(self):
+    def print_cost(self) -> None:
         """Print the current token usage for all models in a grid format."""
-        await self.cost_tracker.print_cost()
+        self.cost_tracker.print_cost()

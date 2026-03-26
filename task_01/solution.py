@@ -6,44 +6,59 @@ Run with: uv run python -m task_01.solution
 import asyncio
 import csv
 import io
+import json
 import logging
-
-from common import Settings, setup_logging
-from common.logging_config import get_logger
-from common.llm_api.llm_client import LLMClient, ParsedResponse
-from common.llm_api.http_client_provider import HttpClientProvider
-from common.hub_client import HubClient
-from common.prompt_loader import PromptLoader
-from pydantic import BaseModel, Field
 from pathlib import Path
 from typing import Literal
-import json
+
 import aiofiles
+from pydantic import BaseModel, Field
+
+from common import Settings, setup_logging
+from common.events import ConversationStart, ParsedResponse
+from common.hub_client import HubClient
+from common.llm_api.http_client_provider import HttpClientProvider
+from common.llm_api.llm_client import LLMClient
+from common.logging_config import get_logger
+from common.prompt_loader import PromptLoader
+from dashboard.client import DashboardClient
 
 logger = get_logger(__name__)
 
-IndustryType = Literal["IT", "transport", "edukacja", "medycyna", "praca z ludźmi", "praca z pojazdami", "praca fizyczna", "inne"]
+IndustryType = Literal[
+    "IT", "transport", "edukacja", "medycyna",
+    "praca z ludźmi", "praca z pojazdami", "praca fizyczna", "inne",
+]
+
 
 class PersonClasified(BaseModel):
     name: str = Field(description="The full name of the person")
     #reasoning: str = Field(description="One sentence reasoning for each selected industry. Qoute 2-3 words from the job description as evidence per tag.")
-    industries: list[IndustryType] = Field(description="List of polish named industries the person is clasified to work in. Use inne if the person does not fit into any of the other categories.")
+    industries: list[IndustryType] = Field(
+        description="List of polish named industries the person is clasified to work in. "
+        "Use inne if the person does not fit into any of the other categories."
+    )
+
+
 class PersonClasifiedList(BaseModel):
     persons: list[PersonClasified] = Field(description="List of person clasifications")
 
 
 async def main() -> None:
-    """
-    Entry point for Task 01.
-    """
+    """Entry point for Task 01."""
     setup_logging(level=logging.DEBUG, task_dir=Path(__file__).parent)
     settings = Settings()
     prompt_loader = PromptLoader(Path(__file__).parent / "prompts")
 
     logger.info("Task 01 started")
 
-    async with HubClient(settings) as hub_client, HttpClientProvider(settings) as provider:
+    async with (
+        HubClient(settings) as hub_client,
+        HttpClientProvider(settings) as provider,
+        DashboardClient(settings.dashboard_ws_url) as dc,
+    ):
         llm_client = LLMClient(provider)
+        dc.post(ConversationStart())
 
         file_path = Path(__file__).parent / ".data" / "people.csv"
         await hub_client.download_file(f"data/{settings.hub_api_key}/people.csv", str(file_path))
@@ -75,7 +90,7 @@ async def main() -> None:
         messages = prompt_loader.load_prompt(
             "clasify_industries",
             industries=IndustryType.__args__,
-            people_json=people_json
+            people_json=people_json,
         )
 
         responses = await llm_client.responses(
@@ -91,6 +106,8 @@ async def main() -> None:
             logger.error("Failed to parse LLM response")
             return
 
+        dc.post(parsed)
+
         final_answer = []
         for person, classified in zip(filtered_people, parsed.output_parsed.persons):
             if classified.name != f"{person['name']} {person['surname']}":
@@ -103,7 +120,7 @@ async def main() -> None:
                     "gender": person["gender"],
                     "born": int(person["birthDate"][:4]),
                     "city": person["birthPlace"],
-                    "tags": classified.industries
+                    "tags": classified.industries,
                 })
 
         logger.info(f"Found {len(final_answer)} people in transport. Submitting answer...")
@@ -120,9 +137,10 @@ async def main() -> None:
                 await f.write(json.dumps(final_answer, ensure_ascii=False, indent=2))
             logger.info(f"Answer saved to {dump_path}")
 
-        await llm_client.print_cost()
+        llm_client.print_cost()
 
     logger.info("Task 01 finished")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

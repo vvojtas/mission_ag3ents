@@ -62,6 +62,12 @@ cp .env.example .env
 uv run python -m task_01.solution
 ```
 
+### Run dashboard
+
+```bash
+uv run uvicorn dashboard.console.app:app --reload --host 127.0.0.1 --port 8765
+```
+
 ### Running mco inspector
 
 npx @modelcontextprotocol/inspector node build/index.js

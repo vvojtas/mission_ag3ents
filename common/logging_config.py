@@ -25,6 +25,11 @@ from typing import Any
 from colorama import Fore, Style, init as colorama_init
 
 
+# Ensure stdout/stderr can handle all Unicode (e.g. emojis on Windows consoles)
+for _stream in (sys.stdout, sys.stderr):
+    if _reconfigure := getattr(_stream, "reconfigure", None):
+        _reconfigure(encoding="utf-8", errors="replace")
+
 # Initialize colorama for Windows compatibility
 colorama_init(autoreset=True)
 
