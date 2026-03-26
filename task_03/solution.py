@@ -155,7 +155,7 @@ def main() -> None:
         "task_03.solution:app",
         host=host,
         port=port,
-        reload=True,
+        reload=False,
         ws="websockets-sansio",
     )
 
