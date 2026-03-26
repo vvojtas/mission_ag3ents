@@ -93,3 +93,18 @@ class CostTracker:
     def snapshot(self) -> dict[str, Usage]:
         """Return an immutable snapshot of current usage for all models."""
         return {model: _model_usage_to_event(mu) for model, mu in self.model_usage.items()}
+
+    async def clear(self) -> None:
+        """Reset all per-model counters to zero.
+
+        Acquires each model lock in sorted order to avoid deadlocks with
+        concurrent ``update_usage`` calls on the same model.
+        """
+        async with self._registry_lock:
+            models = list(self.model_usage)
+        for model in sorted(models):
+            lock = self._model_locks.get(model)
+            if lock is None:
+                continue
+            async with lock:
+                self.model_usage[model] = ModelUsage()

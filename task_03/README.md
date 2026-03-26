@@ -27,7 +27,7 @@ ngrok http 8000
 
 ## Approach
 
-<!-- Describe the API design and how it fits the competition task when known -->
+Used: openai/gpt-5-mini
 
 ## Notes
 
