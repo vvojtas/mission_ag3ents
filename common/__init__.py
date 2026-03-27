@@ -4,7 +4,7 @@ Shared modules for LLM integration, configuration, logging,
 and task platform interaction.
 """
 
-from common.settings import Settings
+from common.settings import MCPWorkspaceSettings, Settings
 from common.logging_config import setup_logging
 
-__all__ = ["Settings", "setup_logging"]
+__all__ = ["MCPWorkspaceSettings", "Settings", "setup_logging"]

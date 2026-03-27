@@ -12,7 +12,10 @@ mission_ag3ents/
 ├── .agents/rules/           # AI assistant rules (committed)
 ├── common/                  # Shared utilities
 │   ├── __init__.py
-│   ├── settings.py          # Pydantic-settings configuration
+│   ├── settings/            # Pydantic-settings (Settings, MCPWorkspaceSettings)
+│   │   ├── __init__.py
+│   │   ├── project_settings.py  # Settings (LLM, hub, …)
+│   │   └── mcp_workspace_settings.py
 │   ├── logging_config.py    # Colored logging setup
 │   ├── hub_client.py        # Task platform API client
 │   ├── prompt_loader.py     # Prompt template loader

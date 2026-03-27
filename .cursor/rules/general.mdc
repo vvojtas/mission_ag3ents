@@ -21,7 +21,7 @@ alwaysApply: true
 - When running scripts, use `uv run python <script>`.
 
 ## Configuration & Secrets
-- **`pydantic-settings`** — all config via the `Settings` class in `common/settings.py`.
+- **`pydantic-settings`** — app config via `Settings` in `common/settings/project_settings.py` (import `from common.settings import Settings`). MCP workspace root: `MCPWorkspaceSettings` in the same package.
 - **`.env`** file for secrets — never hardcode API keys or tokens.
 - **`.env.example`** — keep in sync with any new env vars added.
 

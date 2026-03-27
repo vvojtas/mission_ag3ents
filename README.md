@@ -20,7 +20,7 @@ Repository for AI Devs tasks and challenges.
 mission_ag3ents/
 ├── .agents/rules/        # AI assistant rules
 ├── common/               # Shared utilities
-│   ├── settings.py       # Configuration (pydantic-settings)
+│   ├── settings/         # Configuration (pydantic-settings)
 │   └── logging_config.py # Colored logging setup
 ├── task_01/              # Per-task solution folders
 │   ├── README.md         # Task description & notes
