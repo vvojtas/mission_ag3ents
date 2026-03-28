@@ -57,7 +57,6 @@ def register_search_workspace_text(mcp: FastMCP, workspace_root: Path) -> None:
             target_paths = [(root / rel) for rel in iter_text_files(workspace_root)]
 
         matches: list[dict[str, Any]] = []
-        total_found = 0
         truncated = False
 
         for abs_path in target_paths:
@@ -72,7 +71,6 @@ def register_search_workspace_text(mcp: FastMCP, workspace_root: Path) -> None:
                 max_per_file=max_results_per_file,
                 budget=max_total_results - len(matches),
             )
-            total_found += len(file_matches)
             matches.extend(file_matches)
 
         if not matches:
@@ -135,7 +133,7 @@ def _search_file(
     """Search a single file for regex matches, returning up to the budget."""
     try:
         text = abs_path.read_text(encoding="utf-8", errors="replace")
-    except (PermissionError, OSError):
+    except (OSError):
         return []
 
     lines = text.splitlines()

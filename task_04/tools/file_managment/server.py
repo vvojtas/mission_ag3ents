@@ -1,6 +1,6 @@
 """FastMCP server for workspace file management.
 
-Provides read-only tools for listing, reading, and searching text files
+Provides tools for listing, reading, searching, creating, and editing text files
 within a configurable workspace directory.
 """
 
@@ -11,9 +11,11 @@ from fastmcp import FastMCP
 from common.settings import MCPWorkspaceSettings
 
 from .tools import (
+    register_create_workspace_file,
     register_list_workspace_files,
     register_read_workspace_text_file,
     register_search_workspace_text,
+    register_update_workspace_file,
 )
 
 
@@ -37,14 +39,18 @@ def create_file_management_mcp(workspace_root: Path | None = None) -> FastMCP:
     mcp = FastMCP(
         "File Management MCP Server",
         instructions=(
-            "Read-only workspace file access. Use ws_list_files to discover files, "
-            "ws_read_text_file to read contents, and ws_search_text to find patterns."
+            "Workspace file access — read and write. "
+            "Use ws_list_files to discover files, ws_read_text_file to read contents, "
+            "ws_search_text to find patterns, ws_create_file to create new files, "
+            "and ws_update_file to modify existing files."
         ),
     )
 
     register_list_workspace_files(mcp, root)
     register_read_workspace_text_file(mcp, root)
     register_search_workspace_text(mcp, root)
+    register_create_workspace_file(mcp, root)
+    register_update_workspace_file(mcp, root)
 
     return mcp
 

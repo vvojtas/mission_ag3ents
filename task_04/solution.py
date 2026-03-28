@@ -42,6 +42,7 @@ async def main() -> None:
         MCPClient(mcp_server_app) as mcp_client,
         MCPClient(file_management_mcp) as file_mcp_client,
         MCPClient(hub_doc_mcp) as hub_doc_client,
+        MCPClient(hub_client) as hub_client,
     ):
         llm_client = LLMClient(provider)
         try:

@@ -17,9 +17,7 @@ def register_list_workspace_files(mcp: FastMCP, workspace_root: Path) -> None:
         name="ws_list_files",
         description=(
             "List files in the workspace directory. Returns relative paths. "
-            "Use the `pattern` parameter to filter by glob (e.g. `*.py`, `**/*.md`). "
-            "Without a pattern all files are returned. "
-            "Directories like .git, __pycache__, .venv, and node_modules are excluded."
+            "Use the `pattern` parameter to filter. "
         ),
     )
     async def ws_list_files(

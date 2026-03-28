@@ -4,7 +4,7 @@
 
 ## Overview
 
-Local MCP server providing read-only workspace file access for LLM agents.
+Local MCP server providing workspace file access for LLM agents — read and write.
 Designed for **in-process** use via `Client(mcp)`.
 
 **Transport:** In-process (`Client(mcp)`) — no standalone HTTP needed for normal use.
@@ -14,8 +14,9 @@ Designed for **in-process** use via `Client(mcp)`.
 - List files in the workspace, with optional glob/name filter.
 - Read text files — full content or a line range fragment.
 - Search text content across workspace files — returns matching locations with context.
+- Create new text files (rejects overwrites; creates parent directories automatically).
+- Update existing files — delete lines, replace a line range, or append content.
 - All paths are restricted to the workspace root (no directory traversal).
-- Read-only — no file creation, modification, or deletion.
 
 ## Module Map
 
@@ -24,6 +25,8 @@ Designed for **in-process** use via `Client(mcp)`.
 | `ws_list_files`            | `tools/list_workspace_files.py`            |
 | `ws_read_text_file`        | `tools/read_workspace_text_file.py`        |
 | `ws_search_text`           | `tools/search_workspace_text.py`           |
+| `ws_create_file`           | `tools/create_workspace_file.py`           |
+| `ws_update_file`           | `tools/update_workspace_file.py`           |
 | *(shared helpers)*         | `tools/path_utils.py`                      |
 
 ## Tool Catalog
@@ -91,6 +94,53 @@ Search text files in the workspace for a string or regex pattern. Returns a list
 - Invalid regex → falls back to literal string search, hint notes fallback.
 - Binary files silently skipped.
 - Results truncated → `truncated: true` with hint to narrow scope.
+
+---
+
+### `ws_create_file`
+
+**Responsibility:** Create a new text file in the workspace with optional initial content.
+
+**Description (model-facing):**
+Create a new text file at the given workspace-relative path. Provide `content` to populate the file, or omit it to create an empty file. Fails if the file already exists — use `ws_update_file` to modify existing files. Parent directories are created automatically.
+
+| Parameter  | Type  | Required | Description |
+|------------|-------|----------|-------------|
+| `file_name` | `str` | **Yes** | Workspace-relative path for the new file. |
+| `content`  | `str` | No       | Initial file content. Defaults to empty string. |
+
+**Returns:** `{ path: str, total_lines: int, hint: str }`
+
+**Errors / edge cases:**
+- File already exists → error with hint to use `ws_update_file`.
+- Path escapes workspace → rejected with error.
+- Permission denied → error.
+
+---
+
+### `ws_update_file`
+
+**Responsibility:** Modify an existing workspace text file — delete lines, replace a line range, or append content.
+
+**Description (model-facing):**
+Update an existing text file. Choose a `mode`: `delete` removes lines `start_line`–`end_line`; `replace` substitutes that range with `new_content`; `append` adds `new_content` at the end. Returns the full file content after the edit.
+
+| Parameter    | Type  | Required            | Description |
+|--------------|-------|---------------------|-------------|
+| `file_name`  | `str` | **Yes**             | Workspace-relative path to the file. |
+| `mode`       | `str` | **Yes**             | One of `"delete"`, `"replace"`, `"append"`. |
+| `start_line` | `int` | delete / replace    | 1-based first line of the target range. |
+| `end_line`   | `int` | delete / replace    | 1-based inclusive last line of the target range. |
+| `new_content`| `str` | replace / append    | Content to insert (replace) or add (append). |
+
+**Returns:** `{ path: str, total_lines: int, content: str, hint: str }` — `content` is the full numbered file after the edit (same `{line}|{text}` format as `ws_read_text_file`).
+
+**Errors / edge cases:**
+- File not found → error with hint to use `ws_create_file`.
+- Path escapes workspace → rejected with error.
+- `start_line` / `end_line` missing for delete/replace, or `new_content` missing for replace/append → clear error.
+- `start_line > end_line` or range out of bounds → error with file line count.
+- Permission denied → error.
 
 ## Open Questions
 
