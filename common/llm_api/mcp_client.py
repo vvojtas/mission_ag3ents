@@ -1,6 +1,7 @@
 from typing import Any, Self
 from fastmcp import Client, FastMCP
 
+from common.llm_api.schema_utils import make_strict_schema
 from common.logging_config import get_logger
 logger = get_logger(__name__)
 
@@ -38,33 +39,12 @@ class MCPClient:
         return result.structured_content
 
     @staticmethod
-    def _make_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
-        # OpenAI strict mode requires additionalProperties: false on every object
-        # in the schema tree — MCP tool schemas don't include this by default.
-        
-        logger.log_tool_call(f"stric schema for: {schema}")
-        if not isinstance(schema, dict):
-            return schema
-        schema = dict[str, Any](schema)
-        if schema.get("type") == "object":
-            schema["additionalProperties"] = False
-            if "properties" in schema:
-                schema["properties"] = {
-                    k: MCPClient._make_strict_schema(v)
-                    for k, v in schema["properties"].items()
-                }
-        elif schema.get("type") == "array":
-            if "items" in schema:
-                schema["items"] = MCPClient._make_strict_schema(schema["items"])
-        return schema
-
-    @staticmethod
     def _mcp_tool_to_openai(mcp_tool: Any) -> dict[str, Any]:
         return {
-                "type": "function",
-                "name": mcp_tool.name,
-                "description": mcp_tool.description,
-                "parameters": MCPClient._make_strict_schema(mcp_tool.inputSchema),
-                "strict": True,
-                }
+            "type": "function",
+            "name": mcp_tool.name,
+            "description": mcp_tool.description,
+            "parameters": make_strict_schema(mcp_tool.inputSchema),
+            "strict": True,
+        }
 

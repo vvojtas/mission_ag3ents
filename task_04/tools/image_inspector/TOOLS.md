@@ -15,7 +15,7 @@ model's answer.
 - Load an image file by name from the workspace.
 - Send the image together with a free-form query to a vision-capable LLM via OpenRouter.
 - Return the model's textual answer to the caller.
-- Authenticate via `Settings` (uses `openrouter_api_key`).
+- Authenticate via `Settings` (uses `router_api_key`).
 
 ## How to attach
 

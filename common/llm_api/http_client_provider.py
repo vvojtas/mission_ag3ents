@@ -6,7 +6,7 @@ import asyncio
 
 class HttpClientProvider:
     def __init__(self, settings: Settings, base_url: str | None = None):
-        self.open_router_key = settings.openrouter_api_key
+        self.open_router_key = settings.router_api_key
         self.base_url = base_url or settings.router_url
         self._init_lock = asyncio.Lock()
         self.client: httpx.AsyncClient | None = None

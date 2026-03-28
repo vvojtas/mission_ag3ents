@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
+from common.llm_api.schema_utils import clean_schema
 from common.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -35,22 +36,7 @@ class Tool(ABC, Generic[T]):
         return result
 
     def _get_parameters(self) -> dict:
-        schema = self.get_model().model_json_schema()
-        schema = self._inline_refs(schema, schema.get("$defs", {}))
-        schema.pop("$defs", None)
-        schema.pop("title", None)
-        schema["additionalProperties"] = False
-        return schema
-
-    def _inline_refs(self, node: Any, defs: dict) -> Any:
-        if isinstance(node, dict):
-            if "$ref" in node:
-                ref_name = node["$ref"].split("/")[-1]
-                return self._inline_refs(defs[ref_name], defs)
-            return {k: self._inline_refs(v, defs) for k, v in node.items()}
-        if isinstance(node, list):
-            return [self._inline_refs(item, defs) for item in node]
-        return node
+        return clean_schema(self.get_model().model_json_schema())
 
     
     def to_dict(self) -> dict:

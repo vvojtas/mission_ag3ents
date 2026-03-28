@@ -96,7 +96,8 @@ async def main() -> None:
         responses = await llm_client.responses(
             #model="mistralai/mistral-nemo",
             #model="google/gemini-2.5-flash-lite",
-            model="gpt-5-mini",
+            #model="gpt-5-mini",
+            model="openai/gpt-5-mini",
             input=messages,
             text_format= PersonClasifiedList,
             reasoning={"effort": "medium"},

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     (case-insensitive).
 
     Attributes:
-        openrouter_api_key: API key for OpenRouter LLM access.
+        router_api_key: API key for OpenRouter LLM access.
         hub_api_key: API key for the AI Devs competition platform.
         hub_api_url: Base URL for the AI Devs task API.
         dashboard_ws_url: WebSocket URL for the optional dashboard.
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    openrouter_api_key: str = Field(default=...)
+    router_api_key: str = Field(default=...)
     router_url: str = Field(default="https://openrouter.ai/api/v1")
     hub_api_key: str = Field(default=...)
     hub_api_url: str = "https://api.example.com"
