@@ -41,6 +41,10 @@ class MCPClient:
     def _make_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
         # OpenAI strict mode requires additionalProperties: false on every object
         # in the schema tree — MCP tool schemas don't include this by default.
+        
+        logger.log_tool_call(f"stric schema for: {schema}")
+        if not isinstance(schema, dict):
+            return schema
         schema = dict[str, Any](schema)
         if schema.get("type") == "object":
             schema["additionalProperties"] = False
@@ -49,6 +53,9 @@ class MCPClient:
                     k: MCPClient._make_strict_schema(v)
                     for k, v in schema["properties"].items()
                 }
+        elif schema.get("type") == "array":
+            if "items" in schema:
+                schema["items"] = MCPClient._make_strict_schema(schema["items"])
         return schema
 
     @staticmethod

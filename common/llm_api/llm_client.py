@@ -9,7 +9,7 @@ from common.llm_api.cost_tracker import CostTracker
 from common.llm_api.http_client_provider import HttpClientProvider
 from common.llm_api.model_repository import ModelRepository
 from common.logging_config import format_for_logging, get_logger
-
+from common.llm_api.mcp_client import MCPClient
 
 logger = get_logger(__name__)
 
@@ -19,6 +19,22 @@ class LLMClient:
         self.http_client_provider = http_client_provider
         self.cost_tracker = cost_tracker or CostTracker()
         self.model_repository = ModelRepository(http_client_provider)
+
+    def fix_schema(self, schema):
+        schema = self._inline_refs(schema, schema.get("$defs", {}))
+        schema.pop("$defs", None)
+        schema.pop("title", None)
+        return schema
+
+    def _inline_refs(self, node: Any, defs: dict) -> Any:
+        if isinstance(node, dict):
+            if "$ref" in node:
+                ref_name = node["$ref"].split("/")[-1]
+                return self._inline_refs(defs[ref_name], defs)
+            return {k: self._inline_refs(v, defs) for k, v in node.items()}
+        if isinstance(node, list):
+            return [self._inline_refs(item, defs) for item in node]
+        return node
 
     async def responses(
         self,
@@ -50,7 +66,7 @@ class LLMClient:
                 "format": {
                     "type": "json_schema",
                     "name": text_format.__name__,
-                    "schema": text_format.model_json_schema(),
+                    "schema": MCPClient._make_strict_schema(self.fix_schema(text_format.model_json_schema())),
                     "strict": True,
                 }
             }

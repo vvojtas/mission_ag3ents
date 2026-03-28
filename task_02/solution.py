@@ -76,7 +76,8 @@ async def main() -> None:
             response = await tools_loop.run(
                 #model="google/gemini-2.5-flash-lite",
                 #model="openai/gpt-5.4-nano",
-                model="openai/gpt-5-mini",
+                #model="openai/gpt-5-mini",
+                model="gpt-5-mini",
                 input=messages,
                 max_iterations=20,
                 text_format=FindHimAnswer,
