@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     )
 
     openrouter_api_key: str = Field(default=...)
+    router_url: str = Field(default="https://openrouter.ai/api/v1")
     hub_api_key: str = Field(default=...)
     hub_api_url: str = "https://api.example.com"
 

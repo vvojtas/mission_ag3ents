@@ -95,9 +95,10 @@ async def main() -> None:
 
         responses = await llm_client.responses(
             #model="mistralai/mistral-nemo",
-            model="google/gemini-2.5-flash-lite",
+            #model="google/gemini-2.5-flash-lite",
+            model="gpt-5-mini",
             input=messages,
-            text_format=PersonClasifiedList,
+            text_format= PersonClasifiedList,
             reasoning={"effort": "medium"},
         )
         parsed = next((r for r in responses if isinstance(r, ParsedResponse)), None)
