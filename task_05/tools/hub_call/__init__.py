@@ -1,4 +1,4 @@
-"""Stub MCP server package (mock echo)."""
+"""Hub call MCP server package."""
 
 from .server import mcp
 
