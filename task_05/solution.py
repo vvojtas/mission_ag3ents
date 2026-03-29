@@ -5,6 +5,7 @@ Run with: uv run python -m task_05.solution
 
 import asyncio
 from datetime import datetime
+import logging
 from pathlib import Path
 
 from pydantic import BaseModel, Field

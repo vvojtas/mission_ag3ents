@@ -12,6 +12,8 @@ logger = get_logger(__name__)
 class HubClient:
     def __init__(self, settings: Settings):
         self.hub_api_key = settings.hub_api_key
+        self._default_task_name = settings.hub_task_name
+
         self.base_url = settings.hub_api_url.rstrip("/")
         self._client: httpx.AsyncClient | None = None
 
@@ -53,21 +55,32 @@ class HubClient:
         out_file.write_bytes(response.content)
         logger.info(f"File {out_file} downloaded successfully")
 
-    async def post_answer(self, task_name: str, answer: list | dict | str) -> dict:
+    async def post_answer(
+        self,
+        answer: list | dict | str,
+        task_name: str | None = None,
+    ) -> dict:
         """Post an answer to the hub API for a specific task.
 
         Args:
-            task_name: The name of the task to submit.
             answer: The answer payload.
+            task_name: Hub task code. When omitted, uses ``Settings.hub_task_name``.
 
         Returns:
             The parsed JSON response.
 
         Raises:
+            ValueError: If ``task_name`` is omitted and ``hub_task_name`` is empty.
             httpx.HTTPStatusError: If the API request fails.
         """
+        resolved_task = task_name if task_name is not None else self._default_task_name
+        if not resolved_task:
+            raise ValueError(
+                "task_name was not provided and hub_task_name is empty in Settings; "
+                "set HUB_TASK_NAME or pass task_name explicitly.",
+            )
         payload = {
-            "task": task_name,
+            "task": resolved_task,
             "apikey": self.hub_api_key,
             "answer": answer,
         }

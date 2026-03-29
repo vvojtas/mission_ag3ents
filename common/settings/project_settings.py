@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         router_api_key: API key for OpenRouter LLM access.
         hub_api_key: API key for the AI Devs competition platform.
         hub_api_url: Base URL for the AI Devs task API.
+        hub_task_name: Default hub task code for submissions when task_name is omitted.
         dashboard_ws_url: WebSocket URL for the optional dashboard.
     """
 
@@ -32,5 +33,9 @@ class Settings(BaseSettings):
     router_url: str = Field(default="https://openrouter.ai/api/v1")
     hub_api_key: str = Field(default=...)
     hub_api_url: str = "https://api.example.com"
+    hub_task_name: str = Field(
+        default="",
+        description="Default task code for HubClient.post_answer when task_name is not passed.",
+    )
 
     dashboard_ws_url: str = "ws://127.0.0.1:8765/dashboard/console/ws"

@@ -39,7 +39,7 @@ def create_hub_answer_mcp(
         "Hub Answer MCP Server",
         instructions=(
             "Submit task answers to the hub API. "
-            "Use hub_post_answer with a task name and answer to submit and get the result."
+            "Use hub_post_answer with an answer (or filename); the task code comes from HUB_TASK_NAME."
         ),
     )
 

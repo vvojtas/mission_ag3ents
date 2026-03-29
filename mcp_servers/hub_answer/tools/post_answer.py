@@ -45,7 +45,7 @@ def register_post_answer(mcp: FastMCP, settings: Settings, workspace_root: Path)
     @mcp.tool(
         name="hub_post_answer",
         description=(
-            "Submit an answer for a task to the hub API. "
+            "Submit an answer for the configured hub task."
             "Provide the answer directly as a string, or supply a workspace-relative "
             "filename to load the answer from. If the content is valid JSON it is "
             "parsed before submission. "
@@ -54,15 +54,6 @@ def register_post_answer(mcp: FastMCP, settings: Settings, workspace_root: Path)
         ),
     )
     async def hub_post_answer(
-        task_name: Annotated[
-            str,
-            Field(
-                description=(
-                    "Name of the task to submit (e.g. \"mp3\", \"photos\"). "
-                    "Ask the user if not specified."
-                ),
-            ),
-        ],
         answer: Annotated[
             str | None,
             Field(
@@ -119,7 +110,7 @@ def register_post_answer(mcp: FastMCP, settings: Settings, workspace_root: Path)
                 payload = raw
 
             async with HubClient(settings) as hub:
-                data = await hub.post_answer(task_name, payload)
+                data = await hub.post_answer(payload)
 
             code: int | None = data.get("code")
             message: str = str(data.get("message", ""))
