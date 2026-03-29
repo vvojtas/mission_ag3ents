@@ -73,7 +73,6 @@ class HubClient:
         }
         response = await self._get_client().post("/verify", json=payload)
         logger.log_task_hub(f"Response from hub:\n{response.text}")
-        response.raise_for_status()
         return response.json()
 
     async def call_api(self, url: str, json: dict, add_api_key: bool = True) -> dict | list[dict]:

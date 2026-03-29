@@ -1,6 +1,7 @@
 """Prompt loader utility for reading markdown prompt templates.
 """
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +41,11 @@ class PromptLoader:
 
         content = self._load_prompt(prompt_name)
         if kwargs:
-            content = content.format(**kwargs)
+            content = re.sub(
+                r"\{(\w+)\}",
+                lambda m: str(kwargs[m.group(1)]) if m.group(1) in kwargs else m.group(0),
+                content,
+            )
 
         messages = []
         current_role = None

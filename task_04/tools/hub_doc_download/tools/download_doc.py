@@ -42,6 +42,8 @@ def _build_hint(downloaded: list[str], skipped: list[str], errors: list[dict[str
         parts.append(f"Downloaded {len(downloaded)} file(s).")
     if skipped:
         parts.append(f"Skipped {len(skipped)} (already exist, use force=true to overwrite).")
+    if downloaded or skipped:
+        parts.append("Use ws_read_text_file to read text files.")
     if errors:
         parts.append(f"{len(errors)} file(s) failed.")
     return " ".join(parts) if parts else "Nothing to do."
