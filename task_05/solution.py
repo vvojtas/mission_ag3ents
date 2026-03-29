@@ -22,6 +22,7 @@ from common.prompt_loader import PromptLoader
 from dashboard.client import DashboardClient
 from mcp_servers.hub_answer import mcp as hub_answer_mcp
 
+from .tools.hub_call import mcp as hub_call_mcp
 from .tools.mock_echo import mcp as mock_echo_mcp
 
 logger = get_logger(__name__)
@@ -45,6 +46,7 @@ async def main() -> None:
         HttpClientProvider(settings) as provider,
         MCPClient(mock_echo_mcp) as mock_echo_client,
         MCPClient(hub_answer_mcp) as hub_answer_client,
+        MCPClient(hub_call_mcp) as hub_call_client,
         DashboardClient(settings.dashboard_ws_url) as event_poster,
     ):
         llm_client = LLMClient(provider, cost_tracker)
@@ -54,7 +56,7 @@ async def main() -> None:
             tools_loop = ToolsLoop(
                 llm_client,
                 event_poster=event_poster,
-                mcp_clients=[mock_echo_client, hub_answer_client],
+                mcp_clients=[mock_echo_client, hub_answer_client, hub_call_client],
             )
             await tools_loop.initialize()
 
