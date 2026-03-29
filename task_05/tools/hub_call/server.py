@@ -32,7 +32,7 @@ def create_hub_call_mcp(
         instructions=(
             "Send action commands to the hub API. "
             "Use send_action with a command dict containing an 'action' key. "
-            "If unsure of available actions, send {\"action\": \"help\"} first."
+            "If unsure of available actions, send {\"command\":{\"action\":\"help\"}} first."
         ),
     )
 

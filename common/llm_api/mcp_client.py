@@ -1,9 +1,11 @@
 from typing import Any, Self
 from fastmcp import Client, FastMCP
 
-from common.llm_api.schema_utils import make_strict_schema
+from common.llm_api.schema_utils import make_strict_schema, make_strictless_schema
 from common.logging_config import get_logger
 logger = get_logger(__name__)
+
+strickless_tools = ["send_action"]
 
 class MCPClient:
     def __init__(self, client_initialization_charge: str| FastMCP) -> None:
@@ -34,17 +36,32 @@ class MCPClient:
         client = self._client
         if client is None:
             raise RuntimeError("MCPClient must be used as an async context manager")
-        result = await client.call_tool(tool_name, arguments)
-        logger.log_tool_call(f"Tool {tool_name} returned: {result}")
-        return result.structured_content
+        try:
+            result = await client.call_tool(tool_name, arguments)
+            logger.log_tool_call(f"Tool {tool_name} returned: {result}")
+            return result.structured_content
+        except Exception as ex:
+            return {
+                "sucess": False,
+                "error_message": str(ex)
+            }
 
     @staticmethod
     def _mcp_tool_to_openai(mcp_tool: Any) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "name": mcp_tool.name,
-            "description": mcp_tool.description,
-            "parameters": make_strict_schema(mcp_tool.inputSchema),
-            "strict": True,
-        }
+        if mcp_tool.name in strickless_tools:
+            return {
+                "type": "function",
+                "name": mcp_tool.name,
+                "description": mcp_tool.description,
+                "parameters": make_strictless_schema(mcp_tool.inputSchema),
+                "strict": False,
+            }
+        else:
+            return {
+                "type": "function",
+                "name": mcp_tool.name,
+                "description": mcp_tool.description,
+                "parameters": make_strict_schema(mcp_tool.inputSchema),
+                "strict": True,
+            }
 

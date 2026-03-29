@@ -23,7 +23,6 @@ from dashboard.client import DashboardClient
 from mcp_servers.hub_answer import mcp as hub_answer_mcp
 
 from .tools.hub_call import mcp as hub_call_mcp
-from .tools.mock_echo import mcp as mock_echo_mcp
 
 logger = get_logger(__name__)
 
@@ -44,7 +43,6 @@ async def main() -> None:
     cost_tracker = CostTracker()
     async with (
         HttpClientProvider(settings) as provider,
-        MCPClient(mock_echo_mcp) as mock_echo_client,
         MCPClient(hub_answer_mcp) as hub_answer_client,
         MCPClient(hub_call_mcp) as hub_call_client,
         DashboardClient(settings.dashboard_ws_url) as event_poster,
@@ -56,20 +54,19 @@ async def main() -> None:
             tools_loop = ToolsLoop(
                 llm_client,
                 event_poster=event_poster,
-                mcp_clients=[mock_echo_client, hub_answer_client, hub_call_client],
+                mcp_clients=[hub_call_client],
             )
             await tools_loop.initialize()
 
             messages = prompt_loader.load_prompt(
-                "agent",
-                date=datetime.now().strftime("%Y-%m-%d"),
-                task_code="TBD",
+                "railway"
             )
 
             response = await tools_loop.run(
-                model="google/gemini-3-flash-preview",
+                #model="google/gemini-3-flash-preview",
+                model="gpt-5-nano",
                 input=messages,
-                max_iterations=15,
+                max_iterations=25,
                 text_format=Task05Answer,
                 reasoning={"effort": "medium", "summary": "auto"},
                 parallel_tool_calls=True,

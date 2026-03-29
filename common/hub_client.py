@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 @dataclass(frozen=True)
 class HubResponse:
     """Bundle of parsed JSON body and raw HTTP headers from a hub call."""
-
+    http_code: int
     response: dict[str, Any]
     headers: dict[str, str]
 
@@ -64,38 +64,6 @@ class HubClient:
         out_file.write_bytes(response.content)
         logger.info(f"File {out_file} downloaded successfully")
 
-    async def post_answer(
-        self,
-        answer: list | dict | str,
-        task_name: str | None = None,
-    ) -> dict:
-        """Post an answer to the hub API for a specific task.
-
-        Args:
-            answer: The answer payload.
-            task_name: Hub task code. When omitted, uses ``Settings.hub_task_name``.
-
-        Returns:
-            The parsed JSON response.
-
-        Raises:
-            ValueError: If ``task_name`` is omitted and ``hub_task_name`` is empty.
-            httpx.HTTPStatusError: If the API request fails.
-        """
-        resolved_task = task_name if task_name is not None else self._default_task_name
-        if not resolved_task:
-            raise ValueError(
-                "task_name was not provided and hub_task_name is empty in Settings; "
-                "set HUB_TASK_NAME or pass task_name explicitly.",
-            )
-        payload = {
-            "task": resolved_task,
-            "apikey": self.hub_api_key,
-            "answer": answer,
-        }
-        response = await self._get_client().post("/verify", json=payload)
-        logger.log_task_hub(f"Response from hub:\n{response.text}")
-        return response.json()
 
     async def post_answer_with_headers(
         self,
@@ -132,7 +100,15 @@ class HubClient:
         response = await self._get_client().post("/verify", json=payload)
         logger.log_task_hub(f"Response from hub:\n{response.text}")
         headers = dict(response.headers)
-        return HubResponse(response=response.json(), headers=headers)
+        return HubResponse(http_code=response.status_code, response=response.json(), headers=headers)
+
+    async def post_answer(
+        self,
+        answer: list | dict | str,
+        task_name: str | None = None,
+    ) -> dict:
+        hub_response =  await self.post_answer_with_headers(answer, task_name)
+        return hub_response.response
 
     async def call_api(self, url: str, json: dict, add_api_key: bool = True) -> dict | list[dict]:
         """Send a POST request to an arbitrary hub API endpoint.
