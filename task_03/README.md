@@ -1,8 +1,7 @@
 # Task 03
 
 ## Objective
-
-Run a local REST API server for this task using **FastAPI**.
+Hub **proxy** task: run a local FastAPI app the platform calls. Register the public base URL via `POST /start`; each chat turn is `POST /msg` with `sessionID` and operator message. The agent assists the logistics operator per the task prompt (tools + natural replies).
 
 ## How to run
 
@@ -26,9 +25,15 @@ ngrok http 8000
 ```
 
 ## Approach
+1. Start the API (see **How to run**); use ngrok so the hub can reach it.
+2. On startup, wire `HubClient`, `ToolsLoop`, in-process MCP, prompts, and dashboard events.
+3. `/start` posts to hub `verify` with `task: proxy`, public `url`, and `sessionID`.
+4. `/msg` keeps conversation history per `sessionID`, runs the agent loop with tools, returns structured `ConversationResponse`.
 
-Used: openai/gpt-5-mini
+## LLM usage
+**Agentic loop** with MCP tools via `ToolsLoop`. `ConversationResponse` for each assistant turn. Model and reasoning are set in `solution.py`.
 
 ## Notes
+Used: openai/gpt-5-mini
 
-<!-- Edge cases, deployment, or learnings -->
+<!-- Any additional observations, edge cases, or learnings -->
